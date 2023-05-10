@@ -1,0 +1,379 @@
+import random
+from unidecode import unidecode
+import termcolor
+
+def crear_diccionario (lista_palabras:list, lista_definiciones_palabras:list) -> dict:
+    diccionario_palabra_definicion = {}
+    for i in range (len(lista_palabras)):
+        
+        diccionario_palabra_definicion [lista_palabras[i]]= lista_definiciones_palabras[i]  
+
+    return diccionario_palabra_definicion   
+
+"""
+Elije palabras al azar de la lista de palabras. 6 horizontales y 6 verticales.
+"""       
+def elegir_palabra(tablero, lista_palabras):
+    coordenadas = []
+    letras_referenciales = []
+    coordenadas_ocupadas = []
+
+    palabras_horizontales = random.sample(lista_palabras, 6)
+    palabras_verticales = random.sample([palabra for palabra in lista_palabras if palabra not in palabras_horizontales], 6)
+
+    letras_disponibles = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
+
+    for palabra in palabras_horizontales:
+        fila, columna = -1, -1
+        letra_referencial = letras_disponibles.pop(0)
+        letras_referenciales.append(letra_referencial)
+        largo_palabra = len(palabra)
+        espacio_disponible = 20 - largo_palabra + 1
+        coordenadas_disponibles = [(f, c) for f in range(20) for c in range(espacio_disponible) if all((f, c+i) not in coordenadas_ocupadas for i in range(largo_palabra))]
+        if not coordenadas_disponibles:
+            return elegir_palabra(tablero, lista_palabras)  
+        fila, columna = random.choice(coordenadas_disponibles)
+        coordenadas.append((fila, columna))
+        for i in range(largo_palabra):
+            tablero[fila][columna + i] = letra_referencial
+            coordenadas_ocupadas.append((fila, columna + i))
+
+    for palabra in palabras_verticales:
+        fila, columna = -1, -1
+        letra_referencial = letras_disponibles.pop(0)
+        letras_referenciales.append(letra_referencial)
+        largo_palabra = len(palabra)
+        espacio_disponible = 20 - largo_palabra + 1
+        coordenadas_disponibles = [(f, c) for f in range(espacio_disponible) for c in range(20) if all((f+i, c) not in coordenadas_ocupadas for i in range(largo_palabra))]
+        if not coordenadas_disponibles:
+            return elegir_palabra(tablero, lista_palabras)  
+        fila, columna = random.choice(coordenadas_disponibles)
+        coordenadas.append((fila, columna))
+        for i in range(largo_palabra):
+            tablero[fila + i][columna] = letra_referencial
+            coordenadas_ocupadas.append((fila + i, columna))
+
+    return coordenadas, palabras_horizontales, palabras_verticales, letras_referenciales, lista_palabras
+    
+
+def obtener_definiciones(palabras_verticales: list, palabras_horizontales:list, diccionario_palabras_definiciones: dict) -> list:
+    """
+    Obtiene las definiciones correspondientes a las palabras elegidas al azar
+  
+    """
+    definiciones = []
+    for palabra in palabras_verticales:
+        definiciones.append(diccionario_palabras_definiciones[palabra])
+    for palabra in palabras_horizontales:
+        definiciones.append(diccionario_palabras_definiciones[palabra]) 
+    return definiciones
+
+def mostrar_definiciones(definiciones):
+    for i, definicion in enumerate(definiciones):
+        print(f"{i+1}. {definicion}")
+
+def crear_tablero_vacio() -> list:
+    tablero = []
+    for i in range(20):
+        fila = []
+        for j in range(20):
+            fila.append("")
+        tablero.append(fila)
+    return tablero
+
+
+def crear_tablero(coordenadas, letras_referenciales, palabras_horizontales, palabras_verticales):
+    tablero = []
+    for i in range(20):
+        fila = []
+        for j in range(20):
+            fila.append(termcolor.colored("■", "light_blue", attrs=["bold"]))
+        tablero.append(fila)
+
+    for i, coordenada in enumerate(coordenadas):
+        fila, columna = coordenada
+        letra_referencial = letras_referenciales[i]
+        tablero[fila][columna] = termcolor.colored(letra_referencial.upper(), "magenta", attrs=["bold"])
+
+    for i, palabra in enumerate(palabras_horizontales):
+        fila, columna = coordenadas[i]
+        letra_referencial_pos = letras_referenciales[i]
+        for j in range(len(palabra)):
+            if j == letra_referencial_pos:
+                tablero[fila][columna + j] = termcolor.colored(letras_referenciales[i].upper(), "magenta", attrs=["bold"])
+            else:
+                if tablero[fila][columna + j] != termcolor.colored(letras_referenciales[i].upper(), "magenta", attrs=["bold"]):
+                    tablero[fila][columna + j] = " "
+
+    for i, palabra in enumerate(palabras_verticales):
+        fila, columna = coordenadas[i + len(palabras_horizontales)]
+        letra_referencial_pos = letras_referenciales[i + len(palabras_horizontales)]
+        for j in range(len(palabra)):
+            if j == letra_referencial_pos:
+                tablero[fila + j][columna] = termcolor.colored(letras_referenciales[i + len(palabras_horizontales)].upper(), "magenta", attrs=["bold"])
+            else:
+                if tablero[fila + j][columna] != termcolor.colored(letras_referenciales[i + len(palabras_horizontales)].upper(), "magenta",attrs=["bold"]):
+                    tablero[fila + j][columna] = " "
+
+    return tablero
+
+
+
+
+def imprimir_tablero(tablero: list) -> None:
+  
+    termcolor.cprint("╔", "cyan", attrs=["bold"], end="")
+    for _ in range(20):
+        termcolor.cprint("══", "cyan", attrs=["bold"], end="")
+    termcolor.cprint("╗", "cyan")
+
+    for fila in tablero:
+        termcolor.cprint("║", "cyan", attrs=["bold"], end="")
+        for casilla in fila:
+            print(" " + casilla, end="")
+        termcolor.cprint("║", "cyan", attrs=["bold"])
+
+    termcolor.cprint("╚", "cyan", attrs=["bold"], end="")
+    for _ in range(20):
+        termcolor.cprint("══", "cyan", attrs=["bold"], end="")
+    termcolor.cprint("╝", "cyan", attrs=["bold"])
+
+
+
+
+
+def chequear_respuesta(letras_referenciales: list, palabras_horizontales: list, palabras_verticales: list, lista_correctas: list, tablero: list, coordenadas: list):
+    diccionario_respuestas = {"1a": palabras_horizontales[0], "2b": palabras_horizontales[1], "3c": palabras_horizontales[2], "4d": palabras_horizontales[3], "5e": palabras_horizontales[4], "6f": palabras_horizontales[5], "7g": palabras_verticales[0], "8h": palabras_verticales[1], "9i": palabras_verticales[2], "10j": palabras_verticales[3], "11k": palabras_verticales[4], "12l": palabras_verticales[5]}
+
+    jugador_adivinar = input(termcolor.colored("Ingrese para adivinar una palabra: ", attrs=["bold"])).lower()
+
+    while len(jugador_adivinar.split()) != 2:
+        termcolor.cprint("Formato de entrada no válido. Recuerde que debe ingresar 1b perro (POR EJEMPLO).", "red")
+        jugador_adivinar = input(termcolor.colored("Intente adivinar nuevamente. ", attrs=["bold"]))
+
+    numero_letra, palabra = jugador_adivinar.split()
+
+    if numero_letra not in diccionario_respuestas:
+        termcolor.cprint("Incorrecto.", "red", attrs=["bold"])
+        return 0
+
+    respuesta_normalizada = unidecode(diccionario_respuestas[numero_letra]).lower()
+    palabra_normalizada = unidecode(palabra).lower()
+
+    if palabra_normalizada in lista_correctas:
+        termcolor.cprint(f"Ya adivinaste la palabra '{palabra}'. Intente adivinar otra palabra.", "red", attrs=["bold"])
+        return lista_correctas
+
+    if respuesta_normalizada == palabra_normalizada:
+        lista_correctas.append(palabra)
+
+        for i, letra in enumerate(letras_referenciales):
+            if letra.lower() == numero_letra[1]:
+                coordenadas_letra = coordenadas[i]
+                x, y = coordenadas_letra[0], coordenadas_letra[1]
+
+                if numero_letra[0] in ['1', '2', '3', '4', '5', '6']:
+                    for j, c in enumerate(palabra):
+                        tablero[y][x + j] = c  # Se invierten las coordenadas
+                else:
+                    for j, c in enumerate(palabra):
+                        tablero[y + j][x] = c  # Se invierten las coordenadas
+
+        imprimir_tablero(tablero)
+        termcolor.cprint("¡Correcto!", "green", attrs=["bold"])
+        return lista_correctas
+
+    else:
+        termcolor.cprint("Palabra incorrecta.", "red", attrs=["bold"])
+        respuesta = 0
+        return respuesta
+
+def tirar_dados():
+    valores_dados = [
+        termcolor.colored("┌───────┐\n│       │\n│   ●   │\n│       │\n└───────┘", "magenta", attrs=["bold"]),
+        termcolor.colored("┌───────┐\n│ ●     │\n│       │\n│     ● │\n└───────┘", "magenta", attrs=["bold"]),
+        termcolor.colored("┌───────┐\n│ ●     │\n│   ●   │\n│     ● │\n└───────┘", "magenta", attrs=["bold"]),
+        termcolor.colored("┌───────┐\n│ ●   ● │\n│       │\n│ ●   ● │\n└───────┘", "magenta", attrs=["bold"]),
+        termcolor.colored("┌───────┐\n│ ●   ● │\n│   ●   │\n│ ●   ● │\n└───────┘", "magenta", attrs=["bold"]),
+        termcolor.colored("┌───────┐\n│ ●   ● │\n│ ●   ● │\n│ ●   ● │\n└───────┘", "magenta", attrs=["bold"]),
+    ]
+    respuesta = random.randint(1, 6)
+    termcolor.cprint("Se están tirando los dados...", "cyan")
+    termcolor.cprint("... El número es ...", "cyan")
+    print(valores_dados[respuesta-1])
+    termcolor.cprint(f"El número que salió en los dados es {respuesta}", "light_red", attrs=["bold"])
+    return respuesta
+
+
+def imprimir_vocales_no_adivinadas(lista_correctas, palabras_horizontales, palabras_verticales, tablero_con_palabras, letras_referenciales, coordenadas):
+    for i, palabra in enumerate(palabras_horizontales):
+        letra_referencial = letras_referenciales[i]
+        x, y = coordenadas[letras_referenciales.index(letra_referencial)]
+        if palabra.lower() not in [p.lower() for p in lista_correctas]:
+            for j, letra in enumerate(palabra):
+                if letra.lower() in ['a', 'e', 'i', 'o', 'u']:
+                    if (x, y + j) != coordenadas[i]:
+                        if x < len(tablero_con_palabras) and y + j < len(tablero_con_palabras[x]):
+                            tablero_con_palabras[x][y + j] = termcolor.colored(letra.lower(), "yellow")
+
+    for i, palabra in enumerate(palabras_verticales):
+        letra_referencial = letras_referenciales[i + len(palabras_horizontales)]
+        x, y = coordenadas[i + len(palabras_horizontales)]
+        if palabra.lower() not in [p.lower() for p in lista_correctas]:
+            for j, letra in enumerate(palabra):
+                if letra.lower() in ['a', 'e', 'i', 'o', 'u']:
+                    if (x + j, y) != coordenadas[i + len(palabras_horizontales)]:
+                        if x + j < len(tablero_con_palabras) and y < len(tablero_con_palabras[x + j]):
+                            if tablero_con_palabras[x + j][y] not in letras_referenciales:
+                                tablero_con_palabras[x + j][y] = termcolor.colored(letra.lower(), "yellow")
+
+    return tablero_con_palabras
+    
+
+    
+def menu ():
+    termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+    termcolor.cprint ("CRUCIGRAMA", "light_magenta", attrs=["bold"])
+    termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+    termcolor.cprint ("Ingrese:", "blue", attrs=["bold"])   
+    termcolor.cprint ("1. Para COMENZAR A JUGAR", "yellow")                                                         
+    termcolor.cprint ("0. Si no desea jugar.", "yellow")                          
+    termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+
+def reglas_juego():
+    termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+   
+    termcolor.cprint ("Si desea adivinar una palabra, debe escribirla de la siguiente manera.", "yellow")
+    termcolor.cprint ("Numero DEFINICIÓN + Letra REFERENCIAL, seguido de la palabra que desea adivinar/ver si es correcta.", "yellow")
+    termcolor.cprint ("Por ejemplo, 2B Perro", "light_yellow")
+    termcolor.cprint ("SI NO ACIERTA, SE TIRARA UN DADO", "yellow", attrs=["bold"])
+
+    termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+
+
+def obtener_opcion_menu():
+    opcion = int(input("Ingrese una opción del menú (1, 0): "))
+    while opcion != 1 and opcion != 0:
+        termcolor.cprint("Opción inválida. Intente nuevamente.", "red")
+        opcion = int (input(termcolor.colored("Ingrese una opción del menú (1, 0): ", attrs=["bold"])))
+    return opcion
+
+
+def main():
+    lista_palabras = ['abrazo', 'fachada', 'zangano', 'habitual', 'maleficio', 'sangria', 'bacteria', 'tedio', 'jacal', 'gelido', 'idiosincrasia', 'ketchup', 'madriguera', 'jabon', 'nadar', 'kayak', 'cable', 'ranura', 'abrasion', 'tabasco', 'ballena', 'impermeable', 'obedecer', 'urraca', 'elegante', 'perspicaz', 'lobrego', 'calculadora', 'falacia', 'reciproco', 'yarda', 'kiwi', 'hazaña', 'observatorio', 'democracia', 'imagen', 'pandereta', 'yogur', 'laberinto', 'abollar', 'edificar', 'zaguan', 'jubilo', 'deleznable', 'galaxia', 'ukelele', 'magenta', 'whisky', 'panera', 'xerografia', 'ladear', 'varicela', 'nausea', 'jactarse', 'quehacer', 'naufragio', 'demorar', 'ratificar', 'vehemencia', 'querubin']
+    lista_definiciones_palabras = ["Muestra de cariño. Consiste en rodear con los brazos a otra persona o animal.", "Parte exterior de un edificio.", "Macho de la abeja", "Que ocurre o alguien hace de manera constante o repetida.", "Daño producido por magia o hechizo.", "Bebida que tiene vino, azúcar y frutas.", "Organismo muy pequeño que a veces produce enfermedades.", "Sensación de desgano o aburrimiento por falta de diversión o interés.", "Choza o vivienda muy pobre construida de forma habitual de adobe y con techo de paja. Es una palabra que usan en México.", "Extremadamente frío.", "Rasgos o carácter de una persona o grupo que lo diferencia de los demás.", "Aderezo a base de tomate.", "Cueva donde viven y se esconden algunos animales.", "Producto que sirve para lavar", "Avanzar en el agua moviendo el cuerpo y sin apoyos.", "Embarcación parecida a una canoa.", "Conjunto de alambres finos recubiertos de plástico y aislados unos de otros. Sirven para conducir la electricidad.", "Abertura estrecha. Por ejemplo, de un buzón.", "Herida o irritación de la piel provocada por el roce con una superficie dura o rugosa.", "Salsa típica mexicana muy picante.", "Animal mamífero marino. Es el animal más grande del mundo. Respira aire", "Que impide el paso del agua o humedad.", "Hacer caso a lo que dice una ley o persona.", "Pájaro con cola larga, pico corto, plumas negras y parte de las alas blancas.", "Que habla, actúa y viste con buen gusto.", "Que tiene gran capacidad de comprensión y observación.", "Que carece de luz o está en penumbra.", "Maquina electrónica que sirve para realizar operaciones matemáticas.", "Mentira, engaño.", "Que se da y se recibe de la misma manera.", "Medida de longitud. Equivale a 91,4 cm.", "Fruta con piel peluda marrón e interior verde.", "Hecho heroico que requiere esfuerzo y valentía.", "Lugar para observar.", "Forma de gobierno en la que los ciudadanos pueden votar y elegir a las personas que dirigen el país.", "Representación de algo o alguien.", "Instrumento musical de percusión. Tiene un aro de madera cubierto por cuero, con chapas de metal o cascabeles.", "Alimento líquido. Se obtiene de la leche. Sabor un poco ácido.", "Lugar construido con muchas calles o pasillos que se cruzan y en el que es muy difícil orientarse.", "Hundir una superficie ya sea a golpes o presión.", "Construir un edificio.", "Patio cubierto en la entrada de algunas casas.", "Gran alegría o regocijo.", "Que es despreciable o de poco valor", "Conjunto de estrellas, planetas, partículas, que giran alrededor de un centro y ocupan una parte del universo.", "Parecido a la guitarra pero más pequeño y con 4 cuerdas.", "Color que se obtiene de mezclar rojo y azul.", "Parecido al violeta.", "Bebida alcohólica fuerte y de color marrón", "Recipiente que sirve para guardar el pan.", "Proceso de copia de un texto o imagen en papel mediante una maquina", "Inclinar o torcer hacia un lado.", "Enfermedad que provoca fiebre y granos rojos en la piel.", "Arcada, malestar de estómago que produce ganas de vomitar.", "Hablar bien, presumir o alardear de uno mismo por algo.", "Tarea, actividad que hace una persona.", "Hundimiento o destrucción de un barco que está navegando.", "Retrasar una tarea o acontecimiento.", "Confirmar la verdad o validez de algo.", "Apasionamiento y fuerza en la forma de hablar o actuar de una persona.", "Ángel."]
+    diccionario_palabras_definiciones = crear_diccionario (lista_palabras, lista_definiciones_palabras)
+    lista_correctas = []
+    menu()
+    opcion_menu = obtener_opcion_menu()
+
+    if opcion_menu == 0:   
+        print("Finalizado. ¡Hasta luego!") 
+
+    if opcion_menu == 1:
+        termcolor.cprint("☘ ¡Mucha suerte! ☘", "green", attrs=["bold"])
+        reglas_juego()
+        tablero_vacio = crear_tablero_vacio()
+        coordenadas, palabras_horizontales, palabras_verticales, letras_referenciales, lista_palabras = elegir_palabra(tablero_vacio, lista_palabras)
+        tablero_con_palabras = crear_tablero(coordenadas, letras_referenciales, palabras_horizontales, palabras_verticales)
+        imprimir_tablero(tablero_con_palabras)
+        
+        termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+        termcolor.cprint("A continuación se mostrarán las DEFINICIONES de las 12 palabras.", "light_magenta", attrs=["bold"])
+        termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+        definiciones = obtener_definiciones(palabras_horizontales, palabras_verticales, diccionario_palabras_definiciones)
+        mostrar_definiciones(definiciones)
+        termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+        
+        print (palabras_horizontales, palabras_verticales) #######################CHEQUEO
+        print (letras_referenciales) #######################CHEQUEO
+
+        
+        respuesta = chequear_respuesta (letras_referenciales, palabras_horizontales, palabras_verticales, lista_correctas, tablero_con_palabras, coordenadas)
+        
+       #DESARROLLAR PARA QUE SIGA JUGANDO
+        dados = -1
+        terminar_juego = False
+
+        while (len(lista_correctas)) < 12 and dados != 6:
+            if respuesta != 0:
+                print (lista_correctas)#################ES PARA CHEQUEAR
+                imprimir_tablero(tablero_con_palabras)  #DEBERIA MOSTRAR A TABLERO CON PALABRA ADIVINADA DESCUBIERTA
+                pregunta_definiciones = input (termcolor.colored("Desea que le mostremos nuevamente las definiciones antes de continuar adivinando? SI/NO: ", attrs=["bold"])).lower()
+                
+                while pregunta_definiciones not in ["si", "no"]:
+                    termcolor.cprint("Opción no válida. Intente nuevamente.", "red", attrs=["bold"])
+                    pregunta_definiciones = input (termcolor.colored("Desea que le mostremos nuevamente las definiciones antes de continuar adivinando? SI/NO: ", attrs=["bold"])).lower()
+
+                if pregunta_definiciones == "si": 
+                    mostrar_definiciones(definiciones)  
+                elif pregunta_definiciones == "no":
+                    termcolor.cprint("Usted no quiso ver las definiciones", "blue", attrs=["bold"])
+                
+                termcolor.cprint ("Continúe adivinando.", "green", attrs=["bold"])
+                respuesta = chequear_respuesta (letras_referenciales, palabras_horizontales, palabras_verticales, lista_correctas, tablero_con_palabras, coordenadas)
+            
+
+
+        
+            if respuesta == 0:
+                termcolor.cprint ("Usted no acertó :(", "red", attrs=["bold"])
+                #dados = tirar_dados ()
+                dados = 3
+                termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+                if dados == 1 or dados == 2:
+                    termcolor.cprint ("Lo siento. Perdiste una palabra adivinada. Se te asignará una nueva.", "blue", attrs=["bold"])
+            # DESARROLLO FUNCIONES
+                if dados == 3 or dados == 4:
+                    termcolor.cprint ("Se descubren todas las vocales de las palabras faltantes.", "blue", attrs=["bold"])
+                    imprimir_vocales_no_adivinadas (lista_correctas, palabras_horizontales, palabras_verticales, tablero_con_palabras, letras_referenciales, coordenadas)
+            #DESARROLLO FUNCIONES
+                if dados == 5:
+                    termcolor.cprint ("Puede elegir una palabra comodin, la cual se descubrirá sola.", "blue", attrs=["bold"])
+            #DESARROLLO FUNCIONES
+            
+
+
+        
+                termcolor.cprint ("════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════", "cyan")
+                imprimir_tablero(tablero_con_palabras) ### TENGO QUE MOSTRARLE EL TABLERO MODIFICADO SEGUN LOS DADOS
+                pregunta_definiciones = input ("Desea que le mostremos nuevamente las definiciones antes de continuar adivinando? SI/NO: ").lower()
+                while pregunta_definiciones not in ["si", "no"]:
+                    termcolor.cprint("Opción no válida. Intente nuevamente.", "red", attrs=["bold"])
+                    pregunta_definiciones = input ("Desea que le mostremos nuevamente las definiciones antes de continuar adivinando? SI/NO: ").lower()
+
+                if pregunta_definiciones == "si": 
+                    mostrar_definiciones(definiciones)  
+                elif pregunta_definiciones == "no":
+                    termcolor.cprint("Usted no quiso ver las definiciones", "blue", attrs=["bold"])
+                termcolor.cprint ("Ahora sí. Intente adivinar nuevamente.", "blue", attrs=["bold"])               
+                respuesta = chequear_respuesta (letras_referenciales, palabras_horizontales, palabras_verticales, lista_correctas, tablero_con_palabras, coordenadas)
+
+
+            #if (len(lista_correctas)) == 12:
+            #    termcolor.cprint (f"ACERTÓ TODAS LAS PALABRAS {respuesta}", "green")
+            #    termcolor.cprint ("Usted ha ganado!!!!", "yellow")
+            #    termcolor.cprint ("El juego ha finalizado", "blue")
+          
+            #if dados == 6:
+            #    termcolor.cprint ("💀 DADO DE LA MUERTE 💀", "red") 
+            #    termcolor.cprint ("Lamentablemente, usted perdió :(", "light_red")
+            #    termcolor.cprint ("El juego ha finalizado", "blue")
+            #SE FINALIZA EL JUEGO, DESARROLLO
+
+
+                
+
+
+main() 
+
+
+
+          
+#jugadas especiales
+    # 1 o 2: el usuario pierde una de las palabras que haya completado y se agrega una nueva al listado (VOLVER A REARMAR EL DIBUJO)
+    # 3 o 4: se descubren todas las vocales de las palabras faltantes.
+    # 5: el usuario puede elegir una palabra comodin (se descubrira por si sola en el crucigrama)
+    # 6: Dado de la muerte. Se pierde el juego.".join(fila))
+
+    
